@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import dotenv from 'dotenv';
+import { query } from '../db/db.js';
 
 dotenv.config();
 
@@ -16,6 +17,28 @@ bot.onText(/\/list/, (msg) => listCommand(bot, msg));
 bot.onText(/\/add/, (msg) => addCommand(bot, msg));
 bot.onText(/\/delete/, (msg) => deleteCommand(bot, msg));
 bot.onText(/\/help/, (msg) => helpCommand(bot, msg));
+
+// --- нова тестова команда для перевірки користувачів ---
+bot.onText(/\/debugusers/, async (msg) => {
+  const chatId = msg.chat.id;
+  try {
+    const res = await query(
+      'SELECT telegram_id, username, first_name FROM users',
+    );
+    const usersList =
+      res.rows
+        .map(
+          (u) =>
+            `${u.telegram_id} | ${u.username || '-'} | ${u.first_name || '-'}`,
+        )
+        .join('\n') || 'Немає користувачів';
+
+    bot.sendMessage(chatId, `📋 Користувачі у базі:\n${usersList}`);
+  } catch (err) {
+    console.error('Помилка отримання користувачів:', err);
+    bot.sendMessage(chatId, '❌ Не вдалося отримати користувачів.');
+  }
+});
 
 console.log('Bot is running...');
 

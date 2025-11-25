@@ -1,4 +1,5 @@
 import { createEvent } from '../../db/queries.js';
+import { query } from '../../db/db.js';
 
 // Об'єкт для зберігання стану користувачів
 const userSessions = {};
@@ -31,12 +32,38 @@ export default function addCommand(bot, msg) {
     const [title, description, date] = text.split(';').map((t) => t.trim());
 
     try {
-      const res = await createEvent(title, description, date, userId);
+      // --- Додаємо лог для перевірки користувача у базі ---
+      const resCheck = await query(
+        'SELECT telegram_id, id FROM users WHERE telegram_id = $1',
+        [userId],
+      );
+      console.log('Пошук користувача у users:', resCheck.rows);
+
+      if (resCheck.rowCount === 0) {
+        return bot.sendMessage(
+          chatId,
+          '❌ Користувача немає в базі. Використайте /start',
+        );
+      }
+
+      // Приводимо telegram_id до числа (BigInt) для вставки у events
+      const dbTelegramId = resCheck.rows[0].telegram_id;
+      console.log(
+        'Телеграм ID для вставки у events:',
+        dbTelegramId,
+        'Тип:',
+        typeof dbTelegramId,
+      );
+
+      // Створюємо подію
+      const res = await createEvent(title, description, date, dbTelegramId);
       bot.sendMessage(chatId, `✅ Подію створено! ID: *${res.rows[0].id}*`, {
         parse_mode: 'Markdown',
       });
+
+      console.log('Подія успішно додана:', res.rows[0]);
     } catch (err) {
-      console.error(err);
+      console.error('Помилка при створенні події:', err);
       bot.sendMessage(chatId, '❌ Помилка при створенні події.');
     }
 

@@ -1,3 +1,7 @@
+DROP TABLE IF EXISTS responses;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS users;
+
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   telegram_id BIGINT UNIQUE NOT NULL,
@@ -10,7 +14,7 @@ CREATE TABLE events (
   title TEXT NOT NULL,
   description TEXT,
   event_date TIMESTAMP NOT NULL,
-  created_by INT REFERENCES users(id),
+  created_by BIGINT REFERENCES users(telegram_id),
   created_at TIMESTAMP DEFAULT NOW()
 );
 
